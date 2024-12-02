@@ -4,6 +4,19 @@
   
   
   <entry>
+    <title>DrawCall研究随机</title>
+    <link href="/2024/12/02/DrawCall%E7%A0%94%E7%A9%B6%E9%9A%8F%E6%9C%BA/"/>
+    <url>/2024/12/02/DrawCall%E7%A0%94%E7%A9%B6%E9%9A%8F%E6%9C%BA/</url>
+    
+    <content type="html"><![CDATA[<p>参考文档：1. <a href="https://www.nvidia.com/docs/IO/8228/BatchBatchBatch.pdf">BatchBatchBatch.PDF </a></p><p>参考文档：2. <a href="https://zhuanlan.zhihu.com/p/353856280">DrawCall，Batches，SetPass calls是什么？原理？【匠】 </a></p><h3 id="DrawCall-绘制调用-是什么"><a href="#DrawCall-绘制调用-是什么" class="headerlink" title="DrawCall (绘制调用) 是什么"></a>DrawCall (绘制调用) 是什么</h3><p>DrawCall就是CPU调用图像编程接口，比如 DirectX 的 DrawPrimitive/DrawIndexedPrimitive ，OpenGL 的 glDrawElement/glDrawArrays，以命令 GPU 进行渲染的操作</p><p>简单来讲，就是指 CPU 向 GPU 发送一条指令，用于进行渲染操作。即：DrawCall 就是一次渲染指令调用</p><h3 id="Batches-批处理-又是什么"><a href="#Batches-批处理-又是什么" class="headerlink" title="Batches (批处理)又是什么"></a>Batches (批处理)又是什么</h3><p>把数据加载到显存，设置渲染状态及数据，CPU 调用 DrawCall 的这一整个过程就是一个 Batch。</p><p>这个过程当中主要性能消耗点在于上传物体数据（加载到显存）和设置渲染状态及数据这一块，而不是DrawCall命令本身。</p><p>所以我们将多个 DrawCall 合并为一个 DrawCall 来减少调用DrawCall的开销（主要是调用DrawCall之前的一系列设置）</p><p>这个操作就是 Batches 批处理。</p><h3 id="什么会造成DrawCall增加"><a href="#什么会造成DrawCall增加" class="headerlink" title="什么会造成DrawCall增加"></a>什么会造成DrawCall增加</h3><h4 id="1-无法合批-打断合批"><a href="#1-无法合批-打断合批" class="headerlink" title="1.无法合批&#x2F;打断合批"></a>1.无法合批&#x2F;打断合批</h4><blockquote><p>1.Batch Breaker: Texture Change</p></blockquote><p>纹理的更改会造成合批被打断，即：会增加 Batches 的数量，而 Sprite 的更改不会。</p><p>解决方法：若要降低 DrawCall ，可使用打包图集的方法。</p><p>RawImage 的图片更换则一定会打断合批。</p><blockquote><p>2.Batch Breaker: Transform Change</p></blockquote><p>位置、旋转、缩放、等空间变化的更改会打断合批。</p><p>解决方法：在 UGUI 的使用中进行动静分离，以减少 UI 重绘，降低 DrawCall</p><blockquote><p>3.Batch Breaker: Material Change</p></blockquote><p>不同材质的物体也没办法进行合批，会造成合批被打断</p><p>解决方法：1.使用材质图集将多个纹理合并为一个纹理，以便多个对象可以使用同一个材质，从而实现合批。</p><p>2.使用 Material Property Blocks 进行材质的动态属性修改</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java">示例：<br><span class="hljs-comment">// 获取材质实例</span><br><span class="hljs-type">Material</span> <span class="hljs-variable">instanceMaterial</span> <span class="hljs-operator">=</span> renderer.material;<br><br><span class="hljs-comment">// 使用 Material Property Blocks</span><br><span class="hljs-type">MaterialPropertyBlock</span> <span class="hljs-variable">propertyBlock</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MaterialPropertyBlock</span>();<br>propertyBlock.SetColor(<span class="hljs-string">&quot;_Color&quot;</span>, Color.red); <span class="hljs-comment">// 修改颜色</span><br>renderer.SetPropertyBlock(propertyBlock);<br></code></pre></td></tr></table></figure><h4 id="2-透明物体"><a href="#2-透明物体" class="headerlink" title="2.透明物体"></a>2.透明物体</h4><p>透明图片需要单独处理透明度和深度排序</p><p>每个透明物体通常需要一个单独的 draw call</p><p>因此，不透明图片尽量不开启Alpha通道，如非必要，不使用透明物体以及透明图片，因为透明图片需要单独处理透明度和深度排序</p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Unity笔记</title>
     <link href="/2024/10/25/Unity%E7%AC%94%E8%AE%B0/"/>
     <url>/2024/10/25/Unity%E7%AC%94%E8%AE%B0/</url>
